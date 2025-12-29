@@ -9,7 +9,8 @@
 
 #include 'actions/scripting'
 #include 'actions/basic'
-#include '../lib/portfolio_data.cherri'
+#include 'actions/files'
+#include '../lib/portfolio_csv.cherri'
 #include '../lib/yahoo_api.cherri'
 #include '../lib/formatting.cherri'
 

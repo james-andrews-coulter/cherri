@@ -16,8 +16,9 @@ function formatPercent(number value): text {
     @formatted = formatNumber(value, 2)
     if value >= 0 {
         output("+{formatted}%")
+    } else {
+        output("{formatted}%")
     }
-    output("{formatted}%")
 }
 
 // Calculate gain/loss
