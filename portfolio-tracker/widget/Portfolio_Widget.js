@@ -26,35 +26,46 @@ async function getDataJarValue(key) {
   return null;
 }
 
-// Alternative: Read directly from portfolio.csv if using CSV storage
+// Read directly from portfolio.csv in iCloud Drive/Shortcuts folder
 async function readPortfolioCSV() {
   const fm = FileManager.iCloud();
-  const shortcutsDir = fm.joinPath(fm.documentsDirectory(), "../Shortcuts");
-  const csvPath = fm.joinPath(shortcutsDir, "portfolio.csv");
+
+  // Path to Shortcuts folder in iCloud Drive
+  // This matches the path used by the shortcuts: "Shortcuts/portfolio.csv"
+  const documentsPath = fm.documentsDirectory();
+  const iCloudPath = documentsPath.replace("/Documents", "");
+  const csvPath = fm.joinPath(iCloudPath, "Shortcuts/portfolio.csv");
 
   if (!fm.fileExists(csvPath)) {
+    console.log("Portfolio CSV not found at: " + csvPath);
     return [];
   }
 
-  await fm.downloadFileFromiCloud(csvPath);
-  const csvContent = fm.readString(csvPath);
-  const lines = csvContent.split("\n").filter(l => l.trim());
+  try {
+    await fm.downloadFileFromiCloud(csvPath);
+    const csvContent = fm.readString(csvPath);
+    const lines = csvContent.split("\n").filter(l => l.trim());
 
-  // Skip header
-  const holdings = [];
-  for (let i = 1; i < lines.length; i++) {
-    const [symbol, shares, costBasis, dateAdded] = lines[i].split(",");
-    if (symbol) {
-      holdings.push({
-        symbol: symbol.trim(),
-        shares: parseFloat(shares),
-        costBasis: parseFloat(costBasis),
-        dateAdded: dateAdded?.trim() || ""
-      });
+    // Skip header (first line is: symbol,shares,costBasis,dateAdded)
+    const holdings = [];
+    for (let i = 1; i < lines.length; i++) {
+      const [symbol, shares, costBasis, dateAdded] = lines[i].split(",");
+      if (symbol && symbol.trim()) {
+        holdings.push({
+          symbol: symbol.trim(),
+          shares: parseFloat(shares),
+          costBasis: parseFloat(costBasis),
+          dateAdded: dateAdded?.trim() || ""
+        });
+      }
     }
-  }
 
-  return holdings;
+    console.log(`Loaded ${holdings.length} holdings from CSV`);
+    return holdings;
+  } catch (e) {
+    console.log("Error reading CSV: " + e);
+    return [];
+  }
 }
 
 // Yahoo Finance API
