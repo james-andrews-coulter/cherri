@@ -1,67 +1,92 @@
 /*
  * Portfolio - Remove Holding
- * Removes a stock holding from the portfolio
+ * Removes a stock holding from the portfolio CSV
  */
 
 #define name "Portfolio - Remove Holding"
 #define color red
-#define glyph trash
+#define glyph trashcan
 
+#include 'actions/text'
 #include 'actions/scripting'
-#include 'actions/basic'
-#include 'actions/files'
-#include '../lib/portfolio_csv.cherri'
+#include 'actions/documents'
 
-// Load portfolio
-@portfolio = getPortfolio()
-@holdings = portfolio['holdings']
+const csvPath = "Shortcuts/portfolio.csv"
 
-// Check if empty
-@holdingCount = count(holdings)
-if holdingCount == 0 {
-    alert("Portfolio is empty.\nNothing to remove.", "No Holdings")
+// Read existing CSV
+@csvFile = getFile(csvPath, false)
+
+if csvFile == nil {
+    alert("No portfolio found. Nothing to remove.", "Portfolio Empty")
     stop()
 }
 
-// Build symbol list
-@symbolList = []
-for holding in holdings {
-    @sym = holding['symbol']
-    @sh = holding['shares']
-    @cb = holding['costBasis']
-    @total = sh * cb
-    @formattedTotal = formatNumber(total, 2)
-    @label = "{sym} - {sh} shares (${formattedTotal})"
-    @symbolList += label
+@csvText = getText(csvFile)
+@lines = splitText(csvText)
+
+// Build list of symbols for display
+@symbolsList = []
+@lineNum = 1
+
+for line in lines {
+    @trimmed = trimWhitespace(line)
+
+    if lineNum > 1 {
+        if trimmed != "" {
+            @fields = splitText(line, ",")
+            @sym = getListItem(fields, 1)
+            @symbolsList += sym
+        }
+    }
+
+    @lineNum = lineNum + 1
 }
 
-// Let user choose
-@selected = chooseFromList(symbolList, "Select holding to remove:")
+// Check if portfolio is empty
+@symbolCount = count(symbolsList)
+if symbolCount == 0 {
+    alert("No holdings found. Nothing to remove.", "Portfolio Empty")
+    stop()
+}
 
-// Extract symbol
-@parts = splitText(selected, " - ")
-@symbol = getFirstItem(parts)
+// Show count
+alert("Portfolio has {symbolCount} holdings", "Portfolio")
+
+@selectedSymbol = prompt("Enter symbol to remove:")
+@selectedSymbolUpper = uppercase(selectedSymbol)
 
 // Confirm deletion
-@confirmed = confirm("Remove {symbol} from portfolio?\n\nThis cannot be undone.")
+@confirmed = confirm("Remove {selectedSymbolUpper} from portfolio?
 
-if !confirmed {
+This cannot be undone.")
+
+if confirmed == false {
     stop()
 }
 
-// Find and remove
-@index = findHolding(symbol, holdings)
+// Rebuild CSV without the selected line
+@newLines = ["symbol,shares,costBasis,dateAdded"]
+@lineNum = 1
 
-@updatedHoldings = []
-@i = 1
-for h in holdings {
-    if i != index {
-        @updatedHoldings += h
+for line in lines {
+    @trimmed = trimWhitespace(line)
+
+    if lineNum > 1 {
+        if trimmed != "" {
+            @fields = splitText(line, ",")
+            @lineSymbol = getListItem(fields, 1)
+
+            if lineSymbol != selectedSymbolUpper {
+                @newLines += line
+            }
+        }
     }
-    @i = i + 1
+
+    @lineNum = lineNum + 1
 }
 
-setValue(portfolio, "holdings", updatedHoldings)
-savePortfolio(portfolio)
+// Write updated CSV
+@updatedContent = joinText(newLines)
+saveFile(csvPath, updatedContent, true)
 
-alert("Removed {symbol} from portfolio.", "✅ Holding Removed")
+alert("Removed {selectedSymbolUpper} from portfolio.", "✅ Holding Removed")

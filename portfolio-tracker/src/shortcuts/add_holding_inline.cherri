@@ -1,0 +1,78 @@
+/*
+ * Portfolio - Add Holding
+ * Adds a new stock holding to the portfolio (CSV version)
+ */
+
+#define name "Portfolio - Add Holding"
+#define color blue
+#define glyph calendarPlus
+
+#include 'actions/text'
+#include 'actions/scripting'
+#include 'actions/documents'
+#include 'actions/calendar'
+
+const csvPath = "Shortcuts/portfolio.csv"
+
+// Get inputs from user
+@symbolInput = prompt("Enter stock symbol (e.g., AAPL):", "Text")
+@symbol = uppercase(symbolInput)
+
+if symbol == "" {
+    alert("Error: Stock symbol is required.", "Invalid Input")
+    stop()
+}
+
+@shares = prompt("Number of shares:", "Number")
+@costBasis = prompt("Cost basis per share ($):", "Number")
+
+// Read existing CSV
+@csvFile = getFile(csvPath, false)
+@existingHoldings = []
+
+if csvFile != nil {
+    @csvText = getText(csvFile)
+    @lines = splitText(csvText)  // defaults to \n
+
+    @lineNum = 1
+    for line in lines {
+        @trimmed = trimWhitespace(line)
+
+        // Skip header and empty lines
+        if lineNum > 1 {
+            if trimmed != "" {
+                @fields = splitText(line, ",")
+                @existingSymbol = getListItem(fields, 1)
+
+                // Check for duplicate
+                if existingSymbol == symbol {
+                    alert("{symbol} already exists in portfolio.", "Duplicate Symbol")
+                    stop()
+                }
+
+                @existingHoldings += line
+            }
+        }
+
+        @lineNum = lineNum + 1
+    }
+}
+
+// Create new CSV content
+@today = currentDate()
+@dateStr = formatDate(today, "ISO 8601", "Date")
+@newLine = "{symbol},{shares},{costBasis},{dateStr}"
+
+@allLines = ["symbol,shares,costBasis,dateAdded"]
+@allLines += existingHoldings
+@allLines += newLine
+
+@csvContent = joinText(allLines)
+
+// Save CSV
+saveFile(csvPath, csvContent, true)
+
+// Confirm
+@costTotal = shares * costBasis
+@formattedCost = formatNumber(costTotal, 2)
+alert("Added {shares} shares of {symbol} at ${costBasis}/share.\n\nTotal cost: ${formattedCost}", "✅ Holding Added")

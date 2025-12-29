@@ -1,78 +1,66 @@
 /*
  * Portfolio - Refresh Widget
- * Updates cached data for Scriptable widget
+ * Validates and refreshes portfolio data
  */
 
 #define name "Portfolio - Refresh Widget"
 #define color purple
-#define glyph arrowClockwise
+#define glyph gear
 
+#include 'actions/text'
 #include 'actions/scripting'
-#include 'actions/basic'
-#include 'actions/files'
-#include '../lib/portfolio_csv.cherri'
-#include '../lib/yahoo_api.cherri'
-#include '../lib/formatting.cherri'
+#include 'actions/documents'
+#include 'actions/calendar'
 
-// Load portfolio
-@portfolio = getPortfolio()
-@holdings = portfolio['holdings']
+const csvPath = "Shortcuts/portfolio.csv"
 
-// Check if empty
-@holdingCount = count(holdings)
-if holdingCount == 0 {
-    showNotification("Portfolio is empty", "Widget Refresh")
+// Read existing CSV
+@csvFile = getFile(csvPath, false)
+
+if csvFile == nil {
+    alert("No portfolio found.", "Portfolio Empty")
     stop()
 }
 
-// Collect symbols and fetch prices
-@symbols = []
-for holding in holdings {
-    @sym = holding['symbol']
-    @symbols += sym
+@csvText = getText(csvFile)
+@lines = splitText(csvText)
+
+// Count holdings and calculate total cost
+@holdingCount = 0
+@totalCost = 0
+@lineNum = 1
+
+for line in lines {
+    @trimmed = trimWhitespace(line)
+
+    if lineNum > 1 {
+        if trimmed != "" {
+            @fields = splitText(line, ",")
+            @shares = getListItem(fields, 2)
+            @costBasis = getListItem(fields, 3)
+
+            @sharesNum = number(shares)
+            @costBasisNum = number(costBasis)
+            @cost = sharesNum * costBasisNum
+            @totalCost = totalCost + cost
+            @holdingCount = holdingCount + 1
+        }
+    }
+
+    @lineNum = lineNum + 1
 }
 
-@prices = fetchPrices(symbols)
+// Show summary
+@today = currentDate()
+@dateStr = formatDate(today, "Short", "Date and Time")
 
-// Calculate totals
-@totalCurrentValue = 0
-@totalCostBasis = 0
+if holdingCount == 0 {
+    alert("No holdings found in portfolio.", "Portfolio Empty")
+} else {
+    @totalFormatted = formatNumber(totalCost, 2)
+    alert("Portfolio refreshed!
 
-for holding in holdings {
-    @sym = holding['symbol']
-    @shares = holding['shares']
-    @costBasis = holding['costBasis']
-
-    @currentPrice = prices[sym]
-    @currentValue = shares * currentPrice
-    @costTotal = shares * costBasis
-
-    @totalCurrentValue = totalCurrentValue + currentValue
-    @totalCostBasis = totalCostBasis + costTotal
+Holdings: {holdingCount}
+Total Cost: ${totalFormatted}
+Updated: {dateStr}", "✅ Widget Refreshed")
 }
-
-@totalGainLoss = totalCurrentValue - totalCostBasis
-@totalGainPercent = 0
-if totalCostBasis > 0 {
-    @totalGainPercent = (totalGainLoss / totalCostBasis) * 100
-}
-
-// Store widget data as JSON in iCloud for Scriptable to read
-@widgetData = {
-    "portfolioValue": totalCurrentValue,
-    "portfolioChange": totalGainLoss,
-    "portfolioChangePercent": totalGainPercent,
-    "lastUpdated": currentDate(),
-    "holdings": holdings,
-    "prices": prices
-}
-
-@widgetJSON = getJSON(widgetData)
-saveFile(widgetJSON, "Shortcuts/portfolio_widget_data.json", true)
-
-// Also save updated portfolio timestamp
-savePortfolio(portfolio)
-
-// Notify user
-@formattedValue = formatNumber(totalCurrentValue, 2)
-showNotification("Portfolio: ${formattedValue}", "Widget Updated ✅")

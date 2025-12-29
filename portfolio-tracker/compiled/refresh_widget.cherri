@@ -9,7 +9,8 @@
 
 #include 'actions/web'
 #include 'actions/scripting'
-#include 'actions/files'
+#include 'actions/documents'
+#include 'actions/text'
 
 // Read portfolio from CSV
 const csvPath = "Shortcuts/portfolio.csv"

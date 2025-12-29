@@ -7,8 +7,10 @@
 #define color blue
 #define glyph plus
 
+#include 'actions/text'
 #include 'actions/scripting'
-#include 'actions/files'
+#include 'actions/documents'
+#include 'actions/calendar'
 #include '../lib/portfolio_csv.cherri'
 
 // Get inputs from user

@@ -5,70 +5,59 @@
  * CSV Format: symbol,shares,costBasis,dateAdded
  * Location: iCloud Drive/Shortcuts/portfolio.csv
  *
- * Note: This library requires actions/scripting, actions/files
+ * Note: This library requires actions/scripting, actions/documents, actions/text
  * to be included in the main shortcut file.
  */
 
-#include 'actions/files'
-
-// CSV file path in iCloud Drive
-const csvPath = "Shortcuts/portfolio.csv"
-
 // Read CSV and parse into portfolio structure
 function readPortfolioCSV(): array {
-    @csvFile = getFile(csvPath)
-
-    // If file doesn't exist, return empty array
-    if csvFile == nil {
-        output([])
-    }
-
-    @csvText = getFileContents(csvFile)
-    @lines = splitText(csvText, "\n")
+    const csvPath = "Shortcuts/portfolio.csv"
+    @csvFile = getFile(csvPath, false)
 
     @holdings = []
-    @lineNum = 1
 
-    for line in lines {
-        // Skip header row and empty lines
-        if lineNum == 1 {
+    // If file exists, parse it
+    if csvFile != nil {
+        @csvText = getText(csvFile)
+        @lines = splitText(csvText, "\n")
+
+        @lineNum = 1
+
+        for line in lines {
+            @trimmedLine = trimWhitespace(line)
+
+            // Skip header row (line 1) and empty lines
+            if lineNum > 1 {
+                if trimmedLine != "" {
+                    // Parse CSV line: symbol,shares,costBasis,dateAdded
+                    @fields = splitText(line, ",")
+
+                    @symbol = getListItem(fields, 1)
+                    @sharesText = getListItem(fields, 2)
+                    @costBasisText = getListItem(fields, 3)
+                    @dateAdded = getListItem(fields, 4)
+
+                    // Keep as text for CSV storage
+                    @holding = {}
+                    @holding = setValue(holding, "symbol", symbol)
+                    @holding = setValue(holding, "shares", sharesText)
+                    @holding = setValue(holding, "costBasis", costBasisText)
+                    @holding = setValue(holding, "dateAdded", dateAdded)
+
+                    @holdings += holding
+                }
+            }
+
             @lineNum = lineNum + 1
-            continue
         }
-
-        @trimmedLine = trimWhitespace(line)
-        if trimmedLine == "" {
-            @lineNum = lineNum + 1
-            continue
-        }
-
-        // Parse CSV line: symbol,shares,costBasis,dateAdded
-        @fields = splitText(line, ",")
-
-        @symbol = getListItem(fields, 1)
-        @sharesText = getListItem(fields, 2)
-        @costBasisText = getListItem(fields, 3)
-        @dateAdded = getListItem(fields, 4)
-
-        @shares = number(sharesText)
-        @costBasis = number(costBasisText)
-
-        @holding = {
-            "symbol": symbol,
-            "shares": shares,
-            "costBasis": costBasis,
-            "dateAdded": dateAdded
-        }
-
-        @holdings += holding
-        @lineNum = lineNum + 1
     }
 
-    output(holdings)
+    holdings
 }
 
 // Write holdings array to CSV
 function writePortfolioCSV(array holdings) {
+    const csvPath = "Shortcuts/portfolio.csv"
     @csvContent = "symbol,shares,costBasis,dateAdded\n"
 
     for holding in holdings {
@@ -82,38 +71,38 @@ function writePortfolioCSV(array holdings) {
     }
 
     // Save to iCloud Drive
-    saveFile(csvContent, csvPath, true)  // true = overwrite
+    saveFile(csvPath, csvContent, true)  // true = overwrite
 }
 
-// Get portfolio in standard format (compatible with Data Jar version)
+// Get portfolio in standard format
 function getPortfolio(): dictionary {
     @holdings = readPortfolioCSV()
     @now = currentDate()
     @formatted = formatDate(now, "ISO 8601", "Date")
 
-    @portfolio = {
-        "holdings": holdings,
-        "lastUpdated": formatted
-    }
+    @portfolio = {}
+    @portfolio = setValue(portfolio, "holdings", holdings)
+    @portfolio = setValue(portfolio, "lastUpdated", formatted)
 
-    output(portfolio)
+    portfolio
 }
 
 // Save portfolio from standard format
 function savePortfolio(dictionary portfolio) {
-    @holdings = portfolio['holdings']
+    @holdings = getValue(portfolio, "holdings")
     writePortfolioCSV(holdings)
 }
 
 // Find holding by symbol, returns index (1-based) or -1
 function findHolding(text symbol, array holdings): number {
     @index = 1
+    @result = -1
     for holding in holdings {
         @holdingSymbol = text(holding['symbol'])
         if holdingSymbol == symbol {
-            output(index)
+            @result = index
         }
         @index = index + 1
     }
-    output(-1)
+    result
 }

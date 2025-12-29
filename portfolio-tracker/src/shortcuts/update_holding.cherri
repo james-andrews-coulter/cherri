@@ -1,87 +1,98 @@
 /*
  * Portfolio - Update Holding
- * Updates an existing stock holding
+ * Updates an existing stock holding in the portfolio CSV
  */
 
 #define name "Portfolio - Update Holding"
 #define color orange
 #define glyph pencil
 
+#include 'actions/text'
 #include 'actions/scripting'
-#include 'actions/basic'
-#include 'actions/files'
-#include '../lib/portfolio_csv.cherri'
+#include 'actions/documents'
+#include 'actions/calendar'
 
-// Load portfolio
-@portfolio = getPortfolio()
-@holdings = portfolio['holdings']
+const csvPath = "Shortcuts/portfolio.csv"
 
-// Check if empty
-@holdingCount = count(holdings)
-if holdingCount == 0 {
-    alert("Portfolio is empty.\nAdd holdings first.", "No Holdings")
+// Read existing CSV
+@csvFile = getFile(csvPath, false)
+
+if csvFile == nil {
+    alert("No portfolio found. Please add a holding first.", "Portfolio Empty")
     stop()
 }
 
-// Build symbol list for selection
-@symbolList = []
-for holding in holdings {
-    @sym = holding['symbol']
-    @sh = holding['shares']
-    @cb = holding['costBasis']
-    @label = "{sym} - {sh} shares @ ${cb}"
-    @symbolList += label
+@csvText = getText(csvFile)
+@lines = splitText(csvText)
+
+// Build list of symbols for display
+@symbolsList = []
+@lineNum = 1
+
+for line in lines {
+    @trimmed = trimWhitespace(line)
+
+    if lineNum > 1 {
+        if trimmed != "" {
+            @fields = splitText(line, ",")
+            @sym = getListItem(fields, 1)
+            @symbolsList += sym
+        }
+    }
+
+    @lineNum = lineNum + 1
 }
 
-// Let user choose
-@selected = chooseFromList(symbolList, "Select holding to update:")
+// Check if portfolio is empty
+@symbolCount = count(symbolsList)
+if symbolCount == 0 {
+    alert("No holdings found in portfolio.", "Portfolio Empty")
+    stop()
+}
 
-// Extract symbol from selection (before the " - ")
-@parts = splitText(selected, " - ")
-@symbol = getFirstItem(parts)
+// Show count
+alert("Portfolio has {symbolCount} holdings", "Portfolio")
 
-// Find the holding
-@index = findHolding(symbol, holdings)
-@currentHolding = getListItem(holdings, index)
-
-@currentShares = currentHolding['shares']
-@currentCostBasis = currentHolding['costBasis']
+@selectedSymbol = prompt("Enter symbol to update:")
+@selectedSymbolUpper = uppercase(selectedSymbol)
 
 // Get new values
-@newSharesInput = prompt("New number of shares:", "Number", currentShares)
-@newShares = number(newSharesInput)
+@newShares = prompt("New number of shares:", "Number")
+@newCostBasis = prompt("New cost basis per share ($):", "Number")
 
-if newShares <= 0 {
-    alert("Error: Shares must be greater than 0.", "Invalid Input")
-    stop()
-}
+// Rebuild CSV with updated line
+@newLines = ["symbol,shares,costBasis,dateAdded"]
+@lineNum = 1
 
-@newCostBasisInput = prompt("New cost basis per share ($):", "Number", currentCostBasis)
-@newCostBasis = number(newCostBasisInput)
+for line in lines {
+    @trimmed = trimWhitespace(line)
 
-if newCostBasis <= 0 {
-    alert("Error: Cost basis must be greater than 0.", "Invalid Input")
-    stop()
-}
+    if lineNum > 1 {
+        if trimmed != "" {
+            @fields = splitText(line, ",")
+            @lineSymbol = getListItem(fields, 1)
 
-// Update the holding
-setValue(currentHolding, "shares", newShares)
-setValue(currentHolding, "costBasis", newCostBasis)
-
-// Replace in array (Shortcuts arrays are 1-indexed)
-// Need to rebuild array with updated item
-@updatedHoldings = []
-@i = 1
-for h in holdings {
-    if i == index {
-        @updatedHoldings += currentHolding
-    } else {
-        @updatedHoldings += h
+            if lineSymbol == selectedSymbolUpper {
+                @dateAdded = getListItem(fields, 4)
+                @updatedLine = "{selectedSymbolUpper},{newShares},{newCostBasis},{dateAdded}"
+                @newLines += updatedLine
+            } else {
+                @newLines += line
+            }
+        }
     }
-    @i = i + 1
+
+    @lineNum = lineNum + 1
 }
 
-setValue(portfolio, "holdings", updatedHoldings)
-savePortfolio(portfolio)
+// Write updated CSV
+@updatedContent = joinText(newLines)
+saveFile(csvPath, updatedContent, true)
 
-alert("Updated {symbol}:\n{newShares} shares at ${newCostBasis}/share", "✅ Holding Updated")
+// Show confirmation
+@totalCost = newShares * newCostBasis
+@formattedCost = formatNumber(totalCost, 2)
+alert("Updated {selectedSymbolUpper}:
+{newShares} shares at ${newCostBasis}/share
+
+Total: ${formattedCost}", "✅ Holding Updated")
