@@ -1,0 +1,973 @@
+if ShortcutInput {
+    @_cherri_empty_dictionary: dictionary
+    const _cherri_dictionary_type_name = typeOf(_cherri_empty_dictionary)
+    const _cherri_inputType = typeOf(ShortcutInput)
+    if _cherri_inputType == _cherri_dictionary_type_name {
+        const _cherri_input = getDictionary(ShortcutInput)
+        const _cherri_identifier = getValue(_cherri_input, "cherri_functions")
+        const _cherri_valid = number(_cherri_identifier)
+        if _cherri_valid == true {
+            const _cherri_function = getValue(_cherri_input, "function")
+            const _cherri_function_name = "{_cherri_function}"
+            const _cherri_function_args = getValue(_cherri_input, "arguments")
+            if _cherri_function_name == "readPortfolioCSV" {
+const csvPath = "Shortcuts/portfolio.csv"
+    @csvFile = getFile(csvPath, false)
+
+    @holdings = []
+
+    // If file exists, parse it
+    if csvFile != nil {
+        @csvText = getText(csvFile)
+        @lines = splitText(csvText, "\n")
+
+        @lineNum = 1
+
+        for line in lines {
+            // Skip header row and empty lines
+            if lineNum == 1 {
+                @lineNum = lineNum + 1
+                continue
+            }
+
+            @trimmedLine = trimWhitespace(line)
+            if trimmedLine == "" {
+                @lineNum = lineNum + 1
+                continue
+            }
+
+            // Parse CSV line: symbol,shares,costBasis,dateAdded
+            @fields = splitText(line, ",")
+
+            @symbol = getListItem(fields, 1)
+            @sharesText = getListItem(fields, 2)
+            @costBasisText = getListItem(fields, 3)
+            @dateAdded = getListItem(fields, 4)
+
+            @shares = number(sharesText)
+            @costBasis = number(costBasisText)
+
+            @holding = {
+                "symbol": symbol,
+                "shares": shares,
+                "costBasis": costBasis,
+                "dateAdded": dateAdded
+            }
+
+            @holdings += holding
+            @lineNum = lineNum + 1
+        }
+    }
+
+    holdings
+output(nil)
+            }
+            if _cherri_function_name == "writePortfolioCSV" {
+                const _cherri_writePortfolioCSV_arg_1_holdings = getListItem(_cherri_function_args, 1)
+                @holdings: array
+                const _cherri_writePortfolioCSV_arg_1_holdings_array_dictionary = getDictionary(_cherri_writePortfolioCSV_arg_1_holdings)
+                const _cherri_writePortfolioCSV_arg_1_holdings_array = getValue(_cherri_writePortfolioCSV_arg_1_holdings,"array")
+                for _cherri_writePortfolioCSV_arg_1_holdings_array_item in _cherri_writePortfolioCSV_arg_1_holdings_array {
+                    @holdings += _cherri_writePortfolioCSV_arg_1_holdings_array_item
+                }
+const csvPath = "Shortcuts/portfolio.csv"
+    @csvContent = "symbol,shares,costBasis,dateAdded\n"
+
+    for holding in holdings {
+        @symbol = holding['symbol']
+        @shares = holding['shares']
+        @costBasis = holding['costBasis']
+        @dateAdded = holding['dateAdded']
+
+        @line = "{symbol},{shares},{costBasis},{dateAdded}\n"
+        @csvContent = "{csvContent}{line}"
+    }
+
+    // Save to iCloud Drive
+    saveFile(csvPath, csvContent, true)  // true = overwrite
+output(nil)
+            }
+            if _cherri_function_name == "getPortfolio" {
+@holdings = readPortfolioCSV()
+    @now = currentDate()
+    @formatted = formatDate(now, "ISO 8601", "Date")
+
+    @portfolio = {}
+    @portfolio = setValue(portfolio, "holdings", holdings)
+    @portfolio = setValue(portfolio, "lastUpdated", formatted)
+
+    portfolio
+output(nil)
+            }
+            if _cherri_function_name == "savePortfolio" {
+                const _cherri_savePortfolio_arg_1_portfolio = getListItem(_cherri_function_args, 1)
+                @portfolio: dictionary
+                @portfolio = getDictionary(_cherri_savePortfolio_arg_1_portfolio)
+
+@holdings = getValue(portfolio, "holdings")
+    writePortfolioCSV(holdings)
+output(nil)
+            }
+            if _cherri_function_name == "findHolding" {
+                const _cherri_findHolding_arg_1_symbol = getListItem(_cherri_function_args, 1)
+                @symbol: text
+                @symbol = "{_cherri_findHolding_arg_1_symbol}"
+
+                const _cherri_findHolding_arg_2_holdings = getListItem(_cherri_function_args, 2)
+                @holdings: array
+                const _cherri_findHolding_arg_2_holdings_array_dictionary = getDictionary(_cherri_findHolding_arg_2_holdings)
+                const _cherri_findHolding_arg_2_holdings_array = getValue(_cherri_findHolding_arg_2_holdings,"array")
+                for _cherri_findHolding_arg_2_holdings_array_item in _cherri_findHolding_arg_2_holdings_array {
+                    @holdings += _cherri_findHolding_arg_2_holdings_array_item
+                }
+@index = 1
+    @result = -1
+    for holding in holdings {
+        @holdingSymbol = text(holding['symbol'])
+        if holdingSymbol == symbol {
+            @result = index
+        }
+        @index = index + 1
+    }
+    result
+output(nil)
+            }
+            output(nil)
+        }
+    }
+}
+/*
+Basic Actions and Global Types
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [Doc]: Stop Shortcut: Stops the shortcut.
+
+
+// [Doc]: Nothing: Clear the current output.
+
+
+// [Doc]: Comment: Add an explicit comment.
+
+
+// [Doc]: Get Type: Get the type of input.
+
+
+// [Doc]: Get Object of Class: Get the object of `class` from a variable.
+
+
+// [Doc]: [Output] Show Result: Show `input`.
+
+
+// [Doc]: [Output] Quick Look: Preview `input` in Quick Look.
+
+
+// [Doc]: [Output] Stop and Output: Stop and output `output`. Do nothing if there is nowhere to output.
+
+
+// [Doc]: [Output] Output or Copy to Clipboard: Stop and output `output`. Copy to the clipboard if there is nowhere to output.
+
+
+
+
+// [Doc]: [Output] Must Output: Stop and output `output`. Respond with response if there is nowhere to output.
+
+
+
+
+// [Doc]: [Output] Content Graph: Display input as a content graph.
+
+
+
+
+
+
+
+
+
+
+// [Doc]: Count: Returns a count of `type` of items in `input`.
+
+
+// [Doc]: [Notifications] Alert: Shows an alert with text and optional title and an OK button to proceed.
+
+
+
+
+// [Doc]: [Notifications] Confirm: Shows an alert with text and optional title. It displays an OK button to proceed, and a cancel button that stops the Shortcut.
+
+
+
+
+// [Doc]: [Notifications] Show Notification: Shows a custom notification message.
+
+
+
+
+
+
+
+// [Doc]: Number: Create a number value.
+
+
+
+
+// [Doc]: [Control Flow] Wait: Wait a specified number of seconds.
+
+
+// [Doc]: [Control Flow] Wait to Return: Wait for the user to return to Shortcuts.
+
+
+// [Doc]: [Search] Search/Spotlight: Get results from search on iOS or iPadOS, and Spotlight on macOS.
+
+
+
+/*
+ * Portfolio - Add Holding
+ * Adds a new stock holding to the portfolio
+ */
+
+#define name "Portfolio - Add Holding"
+#define color blue
+#define glyph plus
+
+/*
+Scripting Actions
+*/
+
+// [Doc]: [Dictionaries] Get Dictionary: Get the dictionary from `input`.
+
+
+// [Doc]: [Dictionaries] Get Keys from Dictionary: Get only the keys from the `dictionary`.
+
+
+
+
+// [Doc]: [Dictionaries] Get Values from Dictionary: Get only the values from the `dictionary`.
+
+
+
+
+// [Doc]: [Dictionaries] Get Value from Dictionary: For constants only, otherwise `dictionary['key']` syntax should be used.
+
+
+
+
+// [Doc]: [Dictionaries] Set Value in Dictionary: Set the value of `key` to `value` in `dictionary`.
+
+
+// [Doc]: [Items] Get Name: Get the name of an item.
+
+
+// [Doc]: [Items] Set Name: Set the name of an item.
+
+
+// [Doc]: [Lists] Choose from List: Prompts the user to choose from a list.
+
+
+
+
+
+
+
+// [Doc]: [Lists] Get First Item: Get first item in a list.
+
+
+
+
+// [Doc]: [Lists] Get Last Item: Get the last item in a list.
+
+
+
+
+// [Doc]: [Lists] Get Random Item: Get random item from list.
+
+
+
+
+// [Doc]: [Lists] Get List Item: Get item from `list` at `index`. Keep in mind Shortcuts starts counting indexes at 1.
+
+
+
+
+// [Doc]: [Lists] Get List Items: Get items from a `list` between two indexes. Keep in mind Shortcuts starts counting indexes at 1.
+
+
+
+
+// [Doc]: [Numbers] Format Number: Format number based on decimal place.
+
+
+// [Doc]: [Numbers] Get Numbers: Get numbers from input.
+
+
+// [Doc]: [Numbers] Random Number: Returns a random number between `min` and `max`.
+
+
+// [Doc]: [Passwords] Search Passwords: Searches passwords in the Passwords app.
+
+
+// [Doc]: [System] Dismiss Siri: Dismisses Siri.
+
+
+/*
+Document Actions
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+// [Doc]: [Archives] Make Archive: Create an archive of `files` named `name` in `format`.
+
+
+// [Doc]: [Archives] Extract Archive: Extract files from the archive `file`.
+
+
+// [Doc]: [Books] Add to Books: Add `input` to books. `input` is expected to be a PDF or epub file.
+
+
+// [Doc]: [Editing] Markup: Opens document in a markup editor.
+
+
+// [Doc]: [Files & Folders] Get File Link: Get a link for the provided file.
+
+
+// [Doc]: [Files & Folders] Append File: Append text to a file.
+
+
+
+
+// [Doc]: [Files & Folders] Prepend File: Prepend text to a file.
+
+
+
+
+// [Doc]: [Files & Folders] Create Folder: Create a folder.
+
+
+// [Doc]: [Files & Folders] Delete Files: Delete a file or multiple files.
+
+
+// [Doc]: [Files & Folders] Select File: Prompt the user to select one or optionally multiple files.
+
+
+// [Doc]: [Files & Folders] Select Folder: Prompt the user to select one or optionally multiple folders.
+
+
+
+
+// [Doc]: [Files & Folders] Get File: Get file from a path in the Shortcuts folder.
+
+
+// [Doc]: [Files & Folders] Open File: Open a file.
+
+
+// [Doc]: [Files & Folders] Get Parent Directory: Get the parent directory of the input directory.
+
+
+
+
+
+
+
+
+
+
+
+// [Doc]: [Files & Folders] Get File Detail: Get a detail about a file.
+
+
+// [Doc]: [Files & Folders] Get Selected
+
+
+// [Doc]: [Files & Folders] Reveal in Finder
+
+
+// [Doc]: [Files & Folders] Rename File
+
+
+// [Doc]: [Files & Folders] Save File Prompt: Prompt the user to choose a location to save the file.
+
+
+// [Doc]: [Files & Folders] Save File: Save contents to a file at the specified path.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [Doc]: [Files & Folders] File Size: Returns the size of a file.
+
+
+
+
+// [Doc]: [Notes] Open Note: Open note in the Notes app.
+
+
+// [Doc]: [Notes] Append Note: Append text to a note.
+
+
+// [Doc]: [Notes] Show Quick Note: Show quick note.
+
+
+// [Doc]: [Printing] Print: Print input to a printer.
+
+
+
+
+
+
+
+
+
+// [Doc]: [QR Codes] Make QR Code
+
+
+// [Doc]: Convert to USDZ
+
+
+/*
+Text Editing Actions
+*/
+
+// [Doc]: [Rich Text] Make HTML: Make HTML from Rich Text.
+
+
+// [Doc]: [Rich Text] Make Rich Text from HTML
+
+
+// [Doc]: [Rich Text] Make Markdown: Make Markdown from Rich Text.
+
+
+// [Doc]: [Rich Text] Get Rich Text from Markdown
+
+
+
+
+
+
+
+
+// [Doc]: Dictation: Transcribes user recorded audio to text, optionally in another language.
+
+
+// [Doc]: Get Text from Image
+
+
+// [Doc]: Get Name of Emoji: Detects emoji in the text and returns its name.
+
+
+// [Doc]: Get Text: Get text from input.
+
+
+// [Doc]: Make Spoken Audio: Creates custom spoken audio from text with controls for rate and pitch.
+
+
+// [Doc]: Define: Returns the definition of the word.
+
+
+// [Doc]: Speak: Speaks the provided text, optionally in another language.
+
+
+// [Doc]: Transcribe Audio: Transcribes text from the provided audio.
+
+
+// [Doc]: [Text Editing] Uppercase: Transforms the text to all uppercase.
+
+
+
+
+
+// [Doc]: [Text Editing] Lowercase: Transforms the text to all lowercase.
+
+
+
+
+
+// [Doc]: [Text Editing] Capitalize: Capitalizes the text with sentence case.
+
+
+
+
+
+// [Doc]: [Text Editing] Capitalize All: Capitalizes every word in the text.
+
+
+
+
+
+// [Doc]: [Text Editing] Title Case: Capitalizes the text with Title Case.
+
+
+
+
+
+// [Doc]: [Text Editing] Alternating Case: Capitalizes the text with alternating case.
+
+
+
+
+
+// [Doc]: [Text Editing] Correct Spelling: Corrects the spelling of the provided text.
+
+
+
+
+// [Doc]: [Text Editing] Replace Text: Replace `find` in `subject`, optionally using a regular expression or case insensitive search.
+
+
+
+
+
+
+
+
+// [Doc]: [Text Editing] Trim Whitespace: Trim any whitespace from the start and end of `text`.
+
+
+// [Doc]: [Regular Expressions] Match Text: Use regular expressions to match text.
+
+
+// [Doc]: [Regular Expressions] Get Match Group: Get match group at `index` in `matches`.
+
+
+
+
+// [Doc]: [Regular Expressions] Get Match Groups: Get all groups in `matches`.
+
+
+
+
+/*
+Calendar Actions
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [Doc]: [Calendars] Add Calendar: Create a calendar with `name`.
+
+
+// [Doc]: [Calendars] Open Event in Calendar: Show `event` in the calendar app.
+
+
+// [Doc]: [Calendars] Edit Event: Edit a detail of an event. Provide an event, a detail to modify, and a new value for that detail.
+
+
+// [Doc]: [Calendars] Get Event Detail: Get a detail of an event.
+
+
+// [Doc]: [Calendars] Remove Events: Remove an event.
+
+
+// [Doc]: [Reminders] Open Reminders List
+
+
+// [Doc]: [Reminders] Add Quick Reminder
+
+
+// [Doc]: [Reminders] Remove Reminders
+
+
+// [Doc]: [Alarms] Get Alarms: Returns all of the alarms on the device.
+
+
+// [Doc]: [Timers] Start Timer: Creates a new timer.
+
+
+// [Doc]: [Dates] Get Dates: Get dates from input.
+
+
+// [Doc]: [Dates] Date: Create a date value from `date`. Example: October 5, 2022.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [Doc]: [Dates] Adjust Date: Adjust a date or get the start of a time period.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [Doc]: [Dates] Get Holiday Date: Get the date of a holiday, optionally specifically for a few past or future years.
+
+
+// [Doc]: [Dates] Current Date: Get the current date.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [Doc]: [Formatting] Format Date: Format a date using a standard or custom format.
+
+
+
+
+// [Doc]: [Formatting] Format Time: Format a time using a standard or custom format.
+
+
+
+
+// [Doc]: [Formatting] Format Timestamp: Format a timestamp using standard formats and/or a custom date format.
+
+
+
+
+
+
+
+/*
+ * Portfolio CSV Data Access Layer
+ * Stores portfolio data in iCloud Drive CSV file
+ *
+ * CSV Format: symbol,shares,costBasis,dateAdded
+ * Location: iCloud Drive/Shortcuts/portfolio.csv
+ *
+ * Note: This library requires actions/scripting, actions/documents, actions/text
+ * to be included in the main shortcut file.
+ */
+
+// Read CSV and parse into portfolio structure
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Write holdings array to CSV
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Get portfolio in standard format
+
+
+
+
+
+
+
+
+
+
+
+
+// Save portfolio from standard format
+
+
+
+
+
+// Find holding by symbol, returns index (1-based) or -1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Get inputs from user
+@symbolInput = prompt("Enter stock symbol (e.g., AAPL):", "Text")
+@symbol = uppercase(symbolInput)
+
+if symbol == "" {
+    alert("Error: Stock symbol is required.", "Invalid Input")
+    stop()
+}
+
+@sharesInput = prompt("Number of shares:", "Number")
+@shares = number(sharesInput)
+
+if shares <= 0 {
+    alert("Error: Shares must be greater than 0.", "Invalid Input")
+    stop()
+}
+
+@costBasisInput = prompt("Cost basis per share ($):", "Number")
+@costBasis = number(costBasisInput)
+
+if costBasis <= 0 {
+    alert("Error: Cost basis must be greater than 0.", "Invalid Input")
+    stop()
+}
+
+// Load current portfolio
+@portfolio = getPortfolio()
+@holdings = portfolio['holdings']
+
+// Check for duplicate
+@existingIndex = findHolding(symbol, holdings)
+
+if existingIndex > 0 {
+    alert("{symbol} already exists in portfolio.\nUse 'Update Holding' to modify.", "Duplicate Symbol")
+    stop()
+}
+
+// Create new holding
+@today = currentDate()
+@dateStr = formatDate(today, "yyyy-MM-dd", "Date")
+
+@newHolding = {
+    "symbol": symbol,
+    "shares": shares,
+    "costBasis": costBasis,
+    "dateAdded": dateStr
+}
+
+// Add to holdings array
+@holdings += newHolding
+setValue(portfolio, "holdings", holdings)
+
+// Save
+savePortfolio(portfolio)
+
+// Confirm
+@costTotal = shares * costBasis
+@formattedCost = formatNumber(costTotal, 2)
+alert("Added {shares} shares of {symbol} at ${costBasis}/share.\n\nTotal cost: ${formattedCost}", "✅ Holding Added")

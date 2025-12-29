@@ -9,7 +9,9 @@
 
 #include 'actions/scripting'
 #include 'actions/basic'
-#include 'actions/files'
+#include 'actions/documents'
+#include 'actions/text'
+#include 'actions/calendar'
 #include '../lib/portfolio_csv.cherri'
 
 // Load portfolio

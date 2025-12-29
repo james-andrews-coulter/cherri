@@ -43,19 +43,23 @@ declare -a SHORTCUTS=(
 for item in "${SHORTCUTS[@]}"; do
     IFS=':' read -r source output <<< "$item"
 
-    SOURCE_FILE="$SRC_DIR/shortcuts/${source}.cherri"
+    SOURCE_FILE="${source}.cherri"
     OUTPUT_FILE="$DIST_DIR/${output}.shortcut"
 
     echo "Compiling: ${source}.cherri -> ${output}.shortcut"
 
-    if [ ! -f "$SOURCE_FILE" ]; then
-        echo "  Error: Source file not found: $SOURCE_FILE"
+    if [ ! -f "$SRC_DIR/shortcuts/$SOURCE_FILE" ]; then
+        echo "  Error: Source file not found: $SRC_DIR/shortcuts/$SOURCE_FILE"
         exit 1
     fi
 
+    # Change to shortcuts directory so relative includes work
+    cd "$SRC_DIR/shortcuts"
     cherri "$SOURCE_FILE" -o "$OUTPUT_FILE"
+    COMPILE_RESULT=$?
+    cd "$PROJECT_DIR"
 
-    if [ $? -eq 0 ]; then
+    if [ $COMPILE_RESULT -eq 0 ]; then
         echo "  ✓ Success"
     else
         echo "  ✗ Failed"
