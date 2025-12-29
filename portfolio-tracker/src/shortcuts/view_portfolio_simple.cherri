@@ -1,0 +1,25 @@
+/*
+ * Portfolio - View
+ * Displays portfolio CSV contents
+ */
+
+#define name "Portfolio - View"
+#define color green
+#define glyph list
+
+#include 'actions/text'
+#include 'actions/scripting'
+#include 'actions/documents'
+
+const csvPath = "Shortcuts/portfolio.csv"
+
+// Read CSV file
+@csvFile = getFile(csvPath, false)
+
+if csvFile == nil {
+    alert("No portfolio found. Add holdings to get started.", "Portfolio Empty")
+    stop()
+}
+
+@csvText = getText(csvFile)
+alert(csvText, "Portfolio CSV")

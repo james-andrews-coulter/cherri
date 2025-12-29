@@ -1,0 +1,29 @@
+/*
+ * Portfolio - Refresh
+ * Shows portfolio file info
+ */
+
+#define name "Portfolio - Refresh"
+#define color purple
+#define glyph gear
+
+#include 'actions/text'
+#include 'actions/documents'
+#include 'actions/calendar'
+
+const csvPath = "Shortcuts/portfolio.csv"
+
+// Check if file exists
+@csvFile = getFile(csvPath, false)
+
+if csvFile == nil {
+    alert("No portfolio found.", "Portfolio")
+    stop()
+}
+
+@today = currentDate()
+@dateStr = formatDate(today, "Short", "Date and Time")
+
+alert("Portfolio file exists!
+
+Last checked: {dateStr}", "Portfolio Refreshed")
