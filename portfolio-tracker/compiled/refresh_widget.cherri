@@ -1,6 +1,6 @@
 /*
  * Portfolio - Refresh Widget (with Live Prices)
- * Fetch current prices and show portfolio status
+ * Fetch current prices and show portfolio status from CSV data
  */
 
 #define name "Portfolio - Refresh Widget"
@@ -9,46 +9,108 @@
 
 #include 'actions/web'
 #include 'actions/scripting'
+#include 'actions/files'
 
-// Fetch live prices
-const aaplData = downloadURL("https://query1.finance.yahoo.com/v8/finance/chart/AAPL")
-const aaplChart = getValue(aaplData, "chart")
-const aaplResults = getValue(aaplChart, "result")
-const aaplFirst = getFirstItem(aaplResults)
-const aaplMeta = getValue(aaplFirst, "meta")
-const aaplPrice = getValue(aaplMeta, "regularMarketPrice")
+// Read portfolio from CSV
+const csvPath = "Shortcuts/portfolio.csv"
+@csvFile = getFile(csvPath)
 
-const googlData = downloadURL("https://query1.finance.yahoo.com/v8/finance/chart/GOOGL")
-const googlChart = getValue(googlData, "chart")
-const googlResults = getValue(googlChart, "result")
-const googlFirst = getFirstItem(googlResults)
-const googlMeta = getValue(googlFirst, "meta")
-const googlPrice = getValue(googlMeta, "regularMarketPrice")
+if csvFile == nil {
+    alert("Portfolio CSV not found.\nPlease create Shortcuts/portfolio.csv in iCloud Drive.", "Error")
+    stop()
+}
 
-// Calculate portfolio value with live prices
-const aaplShares = 100
-const aaplCost = 150.25
-@aaplValue = aaplShares * aaplPrice
-@aaplCostTotal = aaplShares * aaplCost
+@csvText = getFileContents(csvFile)
+@lines = splitText(csvText, "\n")
 
-const googlShares = 50
-const googlCost = 135.00
-@googlValue = googlShares * googlPrice
-@googlCostTotal = googlShares * googlCost
+@holdings = []
+@symbols = []
+@lineNum = 1
 
-@totalValue = aaplValue + googlValue
-@totalCost = aaplCostTotal + googlCostTotal
+// Parse CSV (symbol,shares,costBasis,dateAdded)
+for line in lines {
+    if lineNum == 1 {
+        @lineNum = lineNum + 1
+        continue
+    }
+
+    @trimmedLine = trimWhitespace(line)
+    if trimmedLine == "" {
+        @lineNum = lineNum + 1
+        continue
+    }
+
+    @fields = splitText(line, ",")
+    @symbol = getListItem(fields, 1)
+    @sharesText = getListItem(fields, 2)
+    @costBasisText = getListItem(fields, 3)
+
+    @shares = number(sharesText)
+    @costBasis = number(costBasisText)
+
+    @holding = {
+        "symbol": symbol,
+        "shares": shares,
+        "costBasis": costBasis
+    }
+
+    @holdings += holding
+    @symbols += symbol
+    @lineNum = lineNum + 1
+}
+
+// Fetch prices for all symbols
+@prices = {}
+for symbol in symbols {
+    @url = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+    @data = downloadURL(url)
+    @chart = getValue(data, "chart")
+    @results = getValue(chart, "result")
+    @first = getFirstItem(results)
+    @meta = getValue(first, "meta")
+    @price = getValue(meta, "regularMarketPrice")
+
+    setValue(prices, symbol, price)
+}
+
+// Calculate portfolio totals
+@totalValue = 0
+@totalCost = 0
+@priceList = ""
+
+for holding in holdings {
+    @sym = holding['symbol']
+    @shares = holding['shares']
+    @costBasis = holding['costBasis']
+
+    @currentPrice = prices[sym]
+    @currentValue = shares * currentPrice
+    @costTotal = shares * costBasis
+
+    @totalValue = totalValue + currentValue
+    @totalCost = totalCost + costTotal
+
+    @priceList = "{priceList}{sym}: ${currentPrice}\n"
+}
+
 @totalGain = totalValue - totalCost
-@totalGainPercent = (totalGain / totalCost) * 100
+@totalGainPercent = 0
+if totalCost > 0 {
+    @totalGainPercent = (totalGain / totalCost) * 100
+}
 
 @formattedValue = formatNumber(totalValue, 2)
 @formattedGain = formatNumber(totalGain, 2)
 @formattedGainPct = formatNumber(totalGainPercent, 2)
 
+@gainSign = ""
+if totalGain >= 0 {
+    @gainSign = "+"
+}
+
 alert("Widget data refreshed with LIVE prices!
 
 Portfolio Value: ${formattedValue}
-Change: +${formattedGain} (+{formattedGainPct}%)
+Change: {gainSign}${formattedGain} ({gainSign}{formattedGainPct}%)
 
-AAPL: ${aaplPrice}
-GOOGL: ${googlPrice}", "✅ Widget Refreshed")
+{priceList}", "✅ Widget Refreshed")

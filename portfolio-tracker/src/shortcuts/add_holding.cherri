@@ -8,8 +8,8 @@
 #define glyph plus
 
 #include 'actions/scripting'
-#include 'actions/network'
-#include '../lib/portfolio_data.cherri'
+#include 'actions/files'
+#include '../lib/portfolio_csv.cherri'
 
 // Get inputs from user
 @symbolInput = prompt("Enter stock symbol (e.g., AAPL):", "Text")

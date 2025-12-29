@@ -9,7 +9,8 @@
 
 #include 'actions/scripting'
 #include 'actions/basic'
-#include '../lib/portfolio_data.cherri'
+#include 'actions/files'
+#include '../lib/portfolio_csv.cherri'
 #include '../lib/yahoo_api.cherri'
 #include '../lib/formatting.cherri'
 
@@ -56,7 +57,7 @@ if totalCostBasis > 0 {
     @totalGainPercent = (totalGainLoss / totalCostBasis) * 100
 }
 
-// Store widget data in Data Jar for Scriptable to read
+// Store widget data as JSON in iCloud for Scriptable to read
 @widgetData = {
     "portfolioValue": totalCurrentValue,
     "portfolioChange": totalGainLoss,
@@ -66,7 +67,8 @@ if totalCostBasis > 0 {
     "prices": prices
 }
 
-setDataJarValue("portfolioWidget", widgetData)
+@widgetJSON = getJSON(widgetData)
+saveFile(widgetJSON, "Shortcuts/portfolio_widget_data.json", true)
 
 // Also save updated portfolio timestamp
 savePortfolio(portfolio)

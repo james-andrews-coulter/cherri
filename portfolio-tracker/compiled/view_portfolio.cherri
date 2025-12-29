@@ -1,6 +1,6 @@
 /*
  * Portfolio - View (with Live Prices)
- * Display portfolio with real-time stock prices
+ * Display portfolio with real-time stock prices from CSV data
  */
 
 #define name "Portfolio - View"
@@ -10,82 +10,136 @@
 #include 'actions/web'
 #include 'actions/scripting'
 #include 'actions/text'
+#include 'actions/files'
 
-// Fetch AAPL price
-const aaplURL = "https://query1.finance.yahoo.com/v8/finance/chart/AAPL"
-const aaplData = downloadURL(aaplURL)
-const aaplChart = getValue(aaplData, "chart")
-const aaplResults = getValue(aaplChart, "result") 
-const aaplFirst = getFirstItem(aaplResults)
-const aaplMeta = getValue(aaplFirst, "meta")
-const aaplPrice = getValue(aaplMeta, "regularMarketPrice")
+// Read portfolio from CSV
+const csvPath = "Shortcuts/portfolio.csv"
+@csvFile = getFile(csvPath)
 
-// Fetch GOOGL price
-const googlURL = "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL"
-const googlData = downloadURL(googlURL)
-const googlChart = getValue(googlData, "chart")
-const googlResults = getValue(googlChart, "result")
-const googlFirst = getFirstItem(googlResults)
-const googlMeta = getValue(googlFirst, "meta")
-const googlPrice = getValue(googlMeta, "regularMarketPrice")
+if csvFile == nil {
+    alert("Portfolio CSV not found.\nPlease create Shortcuts/portfolio.csv in iCloud Drive.", "Error")
+    stop()
+}
 
-// Example portfolio calculations
-const aaplShares = 100
-const aaplCost = 150.25
-@aaplCurrentValue = aaplShares * aaplPrice
-@aaplCostTotal = aaplShares * aaplCost
-@aaplGain = aaplCurrentValue - aaplCostTotal
-@aaplGainPercent = (aaplGain / aaplCostTotal) * 100
+@csvText = getFileContents(csvFile)
+@lines = splitText(csvText, "\n")
 
-const googlShares = 50
-const googlCost = 135.00
-@googlCurrentValue = googlShares * googlPrice
-@googlCostTotal = googlShares * googlCost
-@googlGain = googlCurrentValue - googlCostTotal
-@googlGainPercent = (googlGain / googlCostTotal) * 100
+@holdings = []
+@symbols = []
+@lineNum = 1
+
+// Parse CSV (symbol,shares,costBasis,dateAdded)
+for line in lines {
+    if lineNum == 1 {
+        @lineNum = lineNum + 1
+        continue
+    }
+
+    @trimmedLine = trimWhitespace(line)
+    if trimmedLine == "" {
+        @lineNum = lineNum + 1
+        continue
+    }
+
+    @fields = splitText(line, ",")
+    @symbol = getListItem(fields, 1)
+    @sharesText = getListItem(fields, 2)
+    @costBasisText = getListItem(fields, 3)
+
+    @shares = number(sharesText)
+    @costBasis = number(costBasisText)
+
+    @holding = {
+        "symbol": symbol,
+        "shares": shares,
+        "costBasis": costBasis
+    }
+
+    @holdings += holding
+    @symbols += symbol
+    @lineNum = lineNum + 1
+}
+
+// Fetch prices for all symbols
+@prices = {}
+for symbol in symbols {
+    @url = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+    @data = downloadURL(url)
+    @chart = getValue(data, "chart")
+    @results = getValue(chart, "result")
+    @first = getFirstItem(results)
+    @meta = getValue(first, "meta")
+    @price = getValue(meta, "regularMarketPrice")
+
+    setValue(prices, symbol, price)
+}
+
+// Calculate portfolio totals
+@totalCurrentValue = 0
+@totalCostBasis = 0
+@holdingDetails = ""
+
+for holding in holdings {
+    @sym = holding['symbol']
+    @shares = holding['shares']
+    @costBasis = holding['costBasis']
+
+    @currentPrice = prices[sym]
+    @currentValue = shares * currentPrice
+    @costTotal = shares * costBasis
+
+    @totalCurrentValue = totalCurrentValue + currentValue
+    @totalCostBasis = totalCostBasis + costTotal
+
+    @gainLoss = currentValue - costTotal
+    @gainPercent = 0
+    if costTotal > 0 {
+        @gainPercent = (gainLoss / costTotal) * 100
+    }
+
+    @formattedValue = formatNumber(currentValue, 2)
+    @formattedCost = formatNumber(costTotal, 2)
+    @formattedGain = formatNumber(gainLoss, 2)
+    @formattedPct = formatNumber(gainPercent, 2)
+
+    @gainSign = ""
+    if gainLoss >= 0 {
+        @gainSign = "+"
+    }
+
+    @holdingDetails = "{holdingDetails}
+━━━━━━━━━━━━━━━━━━
+{sym}: {shares} shares
+Current: ${currentPrice} × {shares} = ${formattedValue}
+Cost:    ${costBasis} × {shares} = ${formattedCost}
+Gain:    ${formattedGain} ({gainSign}{formattedPct}%)
+"
+}
 
 // Portfolio totals
-@totalValue = aaplCurrentValue + googlCurrentValue
-@totalCost = aaplCostTotal + googlCostTotal
-@totalGain = totalValue - totalCost
-@totalGainPercent = (totalGain / totalCost) * 100
+@totalGain = totalCurrentValue - totalCostBasis
+@totalGainPercent = 0
+if totalCostBasis > 0 {
+    @totalGainPercent = (totalGain / totalCostBasis) * 100
+}
 
-// Format numbers
-@formattedAAPLValue = formatNumber(aaplCurrentValue, 2)
-@formattedAAPLCost = formatNumber(aaplCostTotal, 2)
-@formattedAAPLGain = formatNumber(aaplGain, 2)
-@formattedAAPLGainPct = formatNumber(aaplGainPercent, 2)
-
-@formattedGOOGLValue = formatNumber(googlCurrentValue, 2)
-@formattedGOOGLCost = formatNumber(googlCostTotal, 2)
-@formattedGOOGLGain = formatNumber(googlGain, 2)
-@formattedGOOGLGainPct = formatNumber(googlGainPercent, 2)
-
-@formattedTotalValue = formatNumber(totalValue, 2)
-@formattedTotalCost = formatNumber(totalCost, 2)
+@formattedTotalValue = formatNumber(totalCurrentValue, 2)
+@formattedTotalCost = formatNumber(totalCostBasis, 2)
 @formattedTotalGain = formatNumber(totalGain, 2)
-@formattedTotalGainPct = formatNumber(totalGainPercent, 2)
+@formattedTotalPct = formatNumber(totalGainPercent, 2)
+
+@totalGainSign = ""
+if totalGain >= 0 {
+    @totalGainSign = "+"
+}
 
 // Build summary
 @summary = "📊 PORTFOLIO SUMMARY (LIVE)
 
-━━━━━━━━━━━━━━━━━━
-AAPL: {aaplShares} shares
-Current: ${aaplPrice} × {aaplShares} = ${formattedAAPLValue}
-Cost:    ${aaplCost} × {aaplShares} = ${formattedAAPLCost}
-Gain:    ${formattedAAPLGain} (+{formattedAAPLGainPct}%)
-
-━━━━━━━━━━━━━━━━━━
-GOOGL: {googlShares} shares
-Current: ${googlPrice} × {googlShares} = ${formattedGOOGLValue}
-Cost:    ${googlCost} × {googlShares} = ${formattedGOOGLCost}
-Gain:    ${formattedGOOGLGain} (+{formattedGOOGLGainPct}%)
-
-━━━━━━━━━━━━━━━━━━
 Total Value: ${formattedTotalValue}
 Total Cost:  ${formattedTotalCost}
-Gain/Loss:   ${formattedTotalGain} (+{formattedTotalGainPct}%)
-
+Gain/Loss:   ${formattedTotalGain} ({totalGainSign}{formattedTotalPct}%)
+{holdingDetails}
 ✅ Fetched REAL-TIME prices from Yahoo Finance!"
 
 show(summary)

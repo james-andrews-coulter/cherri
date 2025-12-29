@@ -11,7 +11,7 @@ A comprehensive stock portfolio tracking system built with **Cherri** (Siri Shor
 - **Widget Support**: Real-time portfolio widget for iOS/macOS home screen
 - **Auto-Refresh**: Optional daily automation to keep data current
 - **Yahoo Finance Integration**: Live stock price data
-- **Data Jar Storage**: Persistent, iCloud-synced data storage
+- **CSV Storage**: Persistent, iCloud-synced CSV file storage
 
 ## Components
 
@@ -31,16 +31,26 @@ See [SETUP.md](SETUP.md) for complete installation and setup instructions.
 
 ### Prerequisites
 - iOS/iPadOS 15+ or macOS Sonoma+
-- Data Jar (free app)
-- Scriptable (free app)
+- Scriptable (free app) - for widget functionality
 - iCloud Drive enabled
 
 ### Installation Summary
-1. Install Data Jar and Scriptable from App Store
-2. Download and install the 5 compiled `.shortcut` files
-3. Copy `Portfolio_Widget.js` to Scriptable
-4. Add Scriptable widget to home screen
-5. Run "Portfolio - Add Holding" to add your first stock
+1. Create `portfolio.csv` in `iCloud Drive/Shortcuts/` folder (see CSV Format below)
+2. Install Scriptable from App Store (for widget functionality)
+3. Download and install the 5 compiled `.shortcut` files
+4. Copy `Portfolio_Widget.js` to Scriptable
+5. Add Scriptable widget to home screen
+6. Run "Portfolio - Add Holding" to add your first stock
+
+### CSV Format
+Create a file at `iCloud Drive/Shortcuts/portfolio.csv` with the following format:
+```csv
+symbol,shares,costBasis,dateAdded
+AAPL,100,150.25,2024-01-15
+GOOGL,50,135.00,2024-02-20
+```
+
+You can also use the provided `portfolio.csv` example file as a starting point.
 
 ## Usage
 
@@ -62,21 +72,18 @@ See [SETUP.md](SETUP.md) for complete installation and setup instructions.
 ## Architecture
 
 ### Data Storage
-Uses **Data Jar** for persistent storage with the following structure:
+Uses **CSV file** stored in iCloud Drive for persistent, cross-device storage:
 
-```json
-{
-  "holdings": [
-    {
-      "symbol": "AAPL",
-      "shares": 100,
-      "costBasis": 150.25,
-      "dateAdded": "2024-01-15"
-    }
-  ],
-  "lastUpdated": "2024-12-28T09:00:00Z"
-}
+**Location**: `iCloud Drive/Shortcuts/portfolio.csv`
+
+**Format**:
+```csv
+symbol,shares,costBasis,dateAdded
+AAPL,100,150.25,2024-01-15
+GOOGL,50,135.00,2024-02-20
 ```
+
+The shortcuts read and write directly to this CSV file, which is automatically synced across all your devices via iCloud.
 
 ### Yahoo Finance API
 Fetches real-time stock prices from:
@@ -90,7 +97,7 @@ https://query1.finance.yahoo.com/v8/finance/chart/{SYMBOL}
 portfolio-tracker/
 ├── src/
 │   ├── lib/
-│   │   ├── portfolio_data.cherri    # Data access layer
+│   │   ├── portfolio_csv.cherri     # CSV data access layer
 │   │   ├── yahoo_api.cherri         # API integration
 │   │   └── formatting.cherri        # Display utilities
 │   └── shortcuts/
@@ -101,7 +108,8 @@ portfolio-tracker/
 │       └── refresh_widget.cherri
 ├── widget/
 │   └── Portfolio_Widget.js          # Scriptable widget
-├── dist/                             # Compiled shortcuts
+├── compiled/                         # Compiled shortcuts
+├── portfolio.csv                     # Example CSV file
 ├── SETUP.md                          # Setup instructions
 └── README.md                         # This file
 ```
@@ -130,17 +138,17 @@ cherri shortcuts/refresh_widget.cherri -o ../dist/Portfolio_Refresh_Widget.short
 ### Widget Not Updating
 - Ensure internet connection is active
 - Run "Portfolio - Refresh Widget" manually
-- Check that Data Jar is installed and accessible
+- Check that iCloud Drive is enabled and syncing
 
 ### Price Data Issues
 - Yahoo Finance API may have temporary outages
 - Some symbols may not be supported (try alternative exchanges)
 - Rate limiting may occur with frequent requests
 
-### Data Jar Connection
-- Open Data Jar at least once to initialize
-- Grant necessary permissions in iOS Settings
-- Ensure iCloud is enabled
+### CSV File Issues
+- Ensure `portfolio.csv` exists in `iCloud Drive/Shortcuts/` folder
+- Check CSV format matches the required structure (symbol,shares,costBasis,dateAdded)
+- Ensure iCloud Drive is enabled and syncing across devices
 
 ## Limitations
 
@@ -166,8 +174,8 @@ MIT License - See LICENSE file for details
 
 - Built with [Cherri](https://cherrilang.org)
 - Stock data from [Yahoo Finance](https://finance.yahoo.com)
-- Uses [Data Jar](https://datajar.app) for storage
 - Widget powered by [Scriptable](https://scriptable.app)
+- Data storage via iCloud Drive CSV files
 
 ## Support
 
