@@ -1,0 +1,50 @@
+/*
+ * Portfolio - Add Holding
+ * Adds a new stock holding to the portfolio CSV
+ */
+
+#define name "Portfolio - Add Holding"
+#define color blue
+#define glyph calendarPlus
+
+#include 'actions/text'
+#include 'actions/scripting'
+#include 'actions/documents'
+#include 'actions/calendar'
+
+const csvPath = "Shortcuts/portfolio.csv"
+
+// Get inputs
+@symbol = prompt("Stock symbol (e.g., AAPL):")
+@symbolUpper = uppercase(symbol)
+@shares = prompt("Number of shares:", "Number")
+@costBasis = prompt("Cost basis per share ($):", "Number")
+
+// Get current date
+@today = currentDate()
+@dateStr = formatDate(today, "Short", "Date")
+
+// Build new CSV line
+@newLine = "{symbolUpper},{shares},{costBasis},{dateStr}"
+
+// Read existing file or create header
+@csvFile = getFile(csvPath, false)
+
+if csvFile != nil {
+    @existingText = getText(csvFile)
+    @updatedText = "{existingText}
+{newLine}"
+    saveFile(csvPath, updatedText, true)
+} else {
+    @csvHeader = "symbol,shares,costBasis,dateAdded"
+    @initialContent = "{csvHeader}
+{newLine}"
+    saveFile(csvPath, initialContent, true)
+}
+
+// Show confirmation
+@cost = shares * costBasis
+@costFormatted = formatNumber(cost, 2)
+alert("Added {shares} shares of {symbolUpper} at ${costBasis}/share
+
+Total: ${costFormatted}", "Added to Portfolio")

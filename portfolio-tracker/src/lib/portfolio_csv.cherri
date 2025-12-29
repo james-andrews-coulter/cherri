@@ -37,15 +37,12 @@ function readPortfolioCSV(): array {
                     @costBasisText = getListItem(fields, 3)
                     @dateAdded = getListItem(fields, 4)
 
-                    @shares = number(sharesText)
-                    @costBasis = number(costBasisText)
-
-                    @holding = {
-                        "symbol": symbol,
-                        "shares": shares,
-                        "costBasis": costBasis,
-                        "dateAdded": dateAdded
-                    }
+                    // Keep as text for CSV storage
+                    @holding = {}
+                    @holding = setValue(holding, "symbol", symbol)
+                    @holding = setValue(holding, "shares", sharesText)
+                    @holding = setValue(holding, "costBasis", costBasisText)
+                    @holding = setValue(holding, "dateAdded", dateAdded)
 
                     @holdings += holding
                 }
