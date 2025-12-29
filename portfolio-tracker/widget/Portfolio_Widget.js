@@ -29,15 +29,30 @@ async function getDataJarValue(key) {
 // Read directly from portfolio.csv in iCloud Drive/Shortcuts folder
 async function readPortfolioCSV() {
   const fm = FileManager.iCloud();
-
-  // Path to Shortcuts folder in iCloud Drive
-  // This matches the path used by the shortcuts: "Shortcuts/portfolio.csv"
   const documentsPath = fm.documentsDirectory();
-  const iCloudPath = documentsPath.replace("/Documents", "");
-  const csvPath = fm.joinPath(iCloudPath, "Shortcuts/portfolio.csv");
 
-  if (!fm.fileExists(csvPath)) {
-    console.log("Portfolio CSV not found at: " + csvPath);
+  // Try multiple possible paths where the CSV might be located
+  const possiblePaths = [
+    // Path 1: iCloud Drive/Shortcuts/Shortcuts/portfolio.csv (nested Shortcuts folder)
+    fm.joinPath(documentsPath, "../Shortcuts/Shortcuts/portfolio.csv"),
+    // Path 2: iCloud Drive/Shortcuts/portfolio.csv
+    fm.joinPath(documentsPath, "../Shortcuts/portfolio.csv"),
+    // Path 3: Direct in Shortcuts app directory
+    fm.joinPath(fm.libraryDirectory(), "../Shortcuts/portfolio.csv")
+  ];
+
+  let csvPath = null;
+  for (const path of possiblePaths) {
+    if (fm.fileExists(path)) {
+      csvPath = path;
+      console.log("Found CSV at: " + path);
+      break;
+    }
+  }
+
+  if (!csvPath) {
+    console.log("Portfolio CSV not found. Tried paths:");
+    possiblePaths.forEach(p => console.log("  - " + p));
     return [];
   }
 
